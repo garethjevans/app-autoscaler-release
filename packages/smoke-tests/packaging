@@ -1,0 +1,6 @@
+set -e -x
+
+export SOURCE=$(readlink -nf /var/vcap/packages/acceptance)
+export DESTIONATION=${BOSH_COMPILE_TARGET}/acceptance
+
+cp -r $SOURCE $DESTINATION

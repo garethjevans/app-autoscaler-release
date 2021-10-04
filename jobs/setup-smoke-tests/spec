@@ -1,0 +1,12 @@
+---
+name: setup-smoke-tests
+
+templates:
+  run.sh: bin/run
+
+consumes: []
+
+packages:
+- smoke-tests
+
+properties: {}
