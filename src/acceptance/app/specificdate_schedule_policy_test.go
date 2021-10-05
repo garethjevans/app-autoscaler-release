@@ -72,7 +72,7 @@ var _ = Describe("AutoScaler specific date schedule policy", func() {
 			endDateTime = timeNowInTimeZoneWithOffset.Add(time.Duration(interval+120) * time.Second)
 			policy = GenerateDynamicAndSpecificDateSchedulePolicy(cfg, 1, 4, 80, "GMT", startDateTime, endDateTime, 2, 5, 3)
 
-			CreatePolicy(appName, appGUID, policy)
+			CreatePolicy(cfg, appName, appGUID, policy)
 		})
 
 		It("should scale", func() {

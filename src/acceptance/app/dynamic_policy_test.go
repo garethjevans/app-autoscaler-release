@@ -48,7 +48,7 @@ var _ = Describe("AutoScaler dynamic policy", func() {
 		appGUID = strings.TrimSpace(string(guid.Out.Contents()))
 		Expect(cf.Cf("start", appName).Wait(cfg.CfPushTimeoutDuration())).To(Exit(0))
 		WaitForNInstancesRunning(appGUID, initialInstanceCount, cfg.DefaultTimeoutDuration())
-		CreatePolicy(appName, appGUID, policy)
+		CreatePolicy(cfg, appName, appGUID, policy)
 	})
 
 	AfterEach(func() {

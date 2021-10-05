@@ -43,7 +43,7 @@ var _ = Describe("AutoScaler custom metrics policy", func() {
 			guid := cf.Cf("app", appName, "--guid").Wait(cfg.DefaultTimeoutDuration())
 			Expect(guid).To(Exit(0))
 			appGUID = strings.TrimSpace(string(guid.Out.Contents()))
-			CreatePolicy(appName, appGUID, policy)
+			CreatePolicy(cfg, appName, appGUID, policy)
 			if !cfg.IsServiceOfferingEnabled() {
 				CreateCustomMetricCred(appName, appGUID)
 			}

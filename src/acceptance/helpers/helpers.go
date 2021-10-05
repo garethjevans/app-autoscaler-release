@@ -3,9 +3,13 @@ package helpers
 import (
 	"acceptance/config"
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	"math"
+	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +18,7 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	. "github.com/onsi/gomega/gexec"
 )
 
 const (
@@ -23,6 +28,8 @@ const (
 
 	TestBreachDurationSeconds = 60
 	TestCoolDownSeconds       = 60
+
+	PolicyPath = "/v1/apps/{appId}/policy"
 )
 
 type appSummary struct {
@@ -355,4 +362,58 @@ func MarshalWithoutHTMLEscape(v interface{}) ([]byte, error) {
 	}
 
 	return b.Bytes(), nil
+}
+
+func CreatePolicy(cfg *config.Config, appName, appGUID, policy string) {
+	if cfg.IsServiceOfferingEnabled() {
+		instanceName := generator.PrefixedRandomName("autoscaler", "service")
+		createService := cf.Cf("create-service", cfg.ServiceName, cfg.ServicePlan, instanceName).Wait(cfg.DefaultTimeoutDuration())
+		Expect(createService).To(Exit(0), "failed creating service")
+
+		bindService := cf.Cf("bind-service", appName, instanceName, "-c", policy).Wait(cfg.DefaultTimeoutDuration())
+		Expect(bindService).To(Exit(0), "failed binding service to app with a policy ")
+	} else {
+		CreatePolicyWithAPI(cfg, appGUID, policy)
+	}
+}
+
+func CreatePolicyWithAPI(cfg *config.Config, appGUID, policy string) {
+	oauthToken := OauthToken(cfg)
+	client := GetHTTPClient(cfg)
+
+	policyURL := fmt.Sprintf("%s%s", cfg.ASApiEndpoint, strings.Replace(PolicyPath, "{appId}", appGUID, -1))
+	req, err := http.NewRequest("PUT", policyURL, bytes.NewBuffer([]byte(policy)))
+	Expect(err).ShouldNot(HaveOccurred())
+	req.Header.Add("Authorization", oauthToken)
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	Expect(err).ShouldNot(HaveOccurred())
+	defer resp.Body.Close()
+	Expect(resp.StatusCode == 200 || resp.StatusCode == 201).Should(BeTrue())
+	Expect([]int{http.StatusOK, http.StatusCreated}).To(ContainElement(resp.StatusCode))
+}
+
+func GetHTTPClient(cfg *config.Config) *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			Dial: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+			TLSHandshakeTimeout: 10 * time.Second,
+			DisableCompression:  true,
+			DisableKeepAlives:   true,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: cfg.SkipSSLValidation,
+			},
+		},
+		Timeout: 30 * time.Second,
+	}
+}
+func GetAppGuid(cfg *config.Config, appName string) string {
+	guid := cf.Cf("app", appName, "--guid").Wait(cfg.DefaultTimeoutDuration())
+	Expect(guid).To(Exit(0))
+	return strings.TrimSpace(string(guid.Out.Contents()))
 }
