@@ -1,6 +1,6 @@
 module code.cloudfoundry.org/app-autoscaler/src/autoscaler
 
-go 1.17
+go 1.26.0
 
 require (
 	code.cloudfoundry.org/cfhttp v2.0.0+incompatible
@@ -32,7 +32,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/net v0.0.0-20211108170745-6635138e15ea
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
-	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6
+	golang.org/x/time v0.16.0
 	google.golang.org/grpc v1.43.0
 	gopkg.in/yaml.v2 v2.4.0
 )
